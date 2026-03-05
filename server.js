@@ -131,13 +131,21 @@ function makeStoredEntry(commit) {
 
 async function syncChangelogStore() {
   let commits = [];
+  let commitSource = 'git';
   try {
     commits = await getCommitHistory();
   } catch (_error) {
     commits = getFallbackHistory();
+    commitSource = 'fallback';
   }
 
   const existing = await readChangelogStore();
+
+  // If git is unavailable, preserve existing persisted history and avoid truncation.
+  if (commitSource === 'fallback' && existing.length > 0) {
+    return existing;
+  }
+
   const byHash = new Map(existing.map((entry) => [entry.hash, entry]));
   let changed = false;
 
