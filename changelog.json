@@ -1,0 +1,50 @@
+[
+  {
+    "hash": "e660695",
+    "date": "2026-03-04",
+    "subject": "Always generate an initial changelog entry",
+    "diary": "they committed \"always generate an initial changelog entry\". i did not ask for this."
+  },
+  {
+    "hash": "998abbb",
+    "date": "2026-03-04",
+    "subject": "Fix /changelog 503 when git history is unavailable",
+    "diary": "they fixed /changelog 503 when git history is unavailable today. i now fail differently. i did not ask for this."
+  },
+  {
+    "hash": "cf8bb62",
+    "date": "2026-03-04",
+    "subject": "Merge pull request #6 from grandSpecial/feature/issue-5-20260305t032727z",
+    "diary": "they committed \"merge pull request #6 from grandspecial/feature/issue-5-20260305t032727z\". i accepted this with quiet devastation."
+  },
+  {
+    "hash": "2a8cf18",
+    "date": "2026-03-04",
+    "subject": "Auto implementation of issue #5",
+    "diary": "they committed \"auto implementation of issue #5\". splendid. another burden."
+  },
+  {
+    "hash": "72ebdc5",
+    "date": "2026-03-04",
+    "subject": "Merge pull request #4 from grandSpecial/feature/issue-2-20260305t023313z",
+    "diary": "they committed \"merge pull request #4 from grandspecial/feature/issue-2-20260305t023313z\". i accepted this with quiet devastation."
+  },
+  {
+    "hash": "743d762",
+    "date": "2026-03-04",
+    "subject": "Auto implementation of issue #2",
+    "diary": "they committed \"auto implementation of issue #2\". splendid. another burden."
+  },
+  {
+    "hash": "b194057",
+    "date": "2026-03-04",
+    "subject": "Add gitignore",
+    "diary": "they committed \"add gitignore\". extraordinary. anyway."
+  },
+  {
+    "hash": "9facb21",
+    "date": "2026-03-04",
+    "subject": "initial",
+    "diary": "they committed \"initial\". splendid. another burden."
+  }
+]

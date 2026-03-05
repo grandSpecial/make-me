@@ -11,10 +11,10 @@ An experiment in community-driven autonomous software evolution.
 
 ## Changelog route
 
-- `/changelog` reads commit history directly from the local repository at request time
+- `/changelog` stores rewritten entries in `changelog.json` at the app root
+- on each request, the app syncs recent commits into `changelog.json` and keeps existing rewrites stable
 - each commit is rewritten into a lowercase deadpan diary entry from the app's perspective
-- new commits appear automatically on refresh because entries are generated from current `git log`
-- if git history cannot be read in the runtime environment, the route returns a temporary unavailable page
+- if git history is unavailable at runtime, the route still serves a valid page using stored or fallback entries
 
 ## Principles
 

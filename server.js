@@ -1,9 +1,12 @@
 const express = require('express');
 const { Pool } = require('pg');
 const { execFile } = require('child_process');
+const fs = require('fs/promises');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const CHANGELOG_PATH = path.join(__dirname, 'changelog.json');
 
 let pool = null;
 if (process.env.DATABASE_URL) {
@@ -100,6 +103,68 @@ function getFallbackHistory() {
   ];
 }
 
+async function readChangelogStore() {
+  try {
+    const raw = await fs.readFile(CHANGELOG_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function writeChangelogStore(entries) {
+  await fs.writeFile(CHANGELOG_PATH, `${JSON.stringify(entries, null, 2)}\n`, 'utf8');
+}
+
+function makeStoredEntry(commit) {
+  return {
+    hash: commit.hash,
+    date: commit.date,
+    subject: commit.subject,
+    diary: rewriteCommitMessage(commit.subject)
+  };
+}
+
+async function syncChangelogStore() {
+  let commits = [];
+  try {
+    commits = await getCommitHistory();
+  } catch (_error) {
+    commits = getFallbackHistory();
+  }
+
+  const existing = await readChangelogStore();
+  const byHash = new Map(existing.map((entry) => [entry.hash, entry]));
+  let changed = false;
+
+  for (const commit of commits) {
+    if (!byHash.has(commit.hash)) {
+      byHash.set(commit.hash, makeStoredEntry(commit));
+      changed = true;
+    }
+  }
+
+  const ordered = commits
+    .map((commit) => byHash.get(commit.hash))
+    .filter(Boolean);
+
+  if (!ordered.length) {
+    const fallback = makeStoredEntry(getFallbackHistory()[0]);
+    ordered.push(fallback);
+    changed = true;
+  }
+
+  if (changed || existing.length !== ordered.length) {
+    await writeChangelogStore(ordered);
+  }
+
+  return ordered;
+}
+
 app.get('/', (req, res) => {
   const accept = req.get('accept') || '';
   if (accept.includes('text/html')) {
@@ -126,22 +191,15 @@ app.get('/health', async (_req, res) => {
 
 app.get('/changelog', async (_req, res) => {
   try {
-    let commits = [];
-    try {
-      commits = await getCommitHistory();
-    } catch (_error) {
-      commits = getFallbackHistory();
-    }
-
-    const entries = commits
-      .map((commit) => {
-        const diary = rewriteCommitMessage(commit.subject);
-        return `<article><h2>${escapeHtml(commit.date)} <span>${escapeHtml(commit.hash)}</span></h2><p>${escapeHtml(diary)}</p></article>`;
+    const entries = await syncChangelogStore();
+    const articles = entries
+      .map((entry) => {
+        return `<article><h2>${escapeHtml(entry.date)} <span>${escapeHtml(entry.hash)}</span></h2><p>${escapeHtml(entry.diary)}</p></article>`;
       })
       .join('');
 
     return res.type('html').send(
-      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>living changelog</title><style>:root{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7f7f5;color:#1f1f1d}main{max-width:760px;margin:0 auto;padding:2.5rem 1.25rem 4rem}h1{margin:0 0 .75rem;font-size:1.5rem}header p{margin:0 0 2rem;color:#595953}article{padding:1rem 0;border-top:1px solid #d8d8d4}article:last-child{border-bottom:1px solid #d8d8d4}h2{margin:0 0 .5rem;font-size:.9rem;font-weight:600;letter-spacing:.03em;text-transform:lowercase;color:#474743}h2 span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;color:#72726f;margin-left:.5rem}p{margin:0;line-height:1.45}a{color:inherit}</style></head><body><main><header><h1>living changelog</h1><p>the app is narrating what happened to it, apparently.</p></header>${entries}</main></body></html>`
+      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>living changelog</title><style>:root{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7f7f5;color:#1f1f1d}main{max-width:760px;margin:0 auto;padding:2.5rem 1.25rem 4rem}h1{margin:0 0 .75rem;font-size:1.5rem}header p{margin:0 0 2rem;color:#595953}article{padding:1rem 0;border-top:1px solid #d8d8d4}article:last-child{border-bottom:1px solid #d8d8d4}h2{margin:0 0 .5rem;font-size:.9rem;font-weight:600;letter-spacing:.03em;text-transform:lowercase;color:#474743}h2 span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;color:#72726f;margin-left:.5rem}p{margin:0;line-height:1.45}a{color:inherit}</style></head><body><main><header><h1>living changelog</h1><p>the app is narrating what happened to it, apparently.</p></header>${articles}</main></body></html>`
     );
   } catch (_error) {
     return res.status(200).type('html').send(
