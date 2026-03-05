@@ -13,8 +13,15 @@ An experiment in community-driven autonomous software evolution.
 - The public repository stays minimal and deployable.
 - Autonomous bot/governance logic is external and never committed here.
 - Community proposes features via GitHub issues.
-- Only issues labeled `ready` are eligible for automation.
-- Voting uses 👍 reactions on those eligible issues.
+- Voting uses 👍 reactions on issue comments.
+- The top-voted eligible comment is interpreted and implemented by an external local bot.
+
+## External Bot Model
+
+- The bot runs locally (outside this repository) on a 2-hour cron schedule.
+- If no eligible comments exist, it does nothing and exits.
+- The bot is responsible for issue/comment selection, Codex execution, PR creation, CI waiting, merge, and issue closure.
+- This repository contains no autonomous workflows, no prompt templates, and no bot code.
 
 ## Local run
 
