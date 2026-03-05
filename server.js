@@ -13,7 +13,33 @@ if (process.env.DATABASE_URL) {
 }
 
 app.get('/', (_req, res) => {
-  res.type('text/plain').send('Make me.');
+  res.type('html').send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Make me</title>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      p {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Make me.</p>
+  </body>
+</html>`);
 });
 
 app.get('/health', async (_req, res) => {
