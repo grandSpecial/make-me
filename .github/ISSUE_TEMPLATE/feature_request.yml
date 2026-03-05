@@ -1,0 +1,32 @@
+name: Feature Request
+description: Propose a feature for autonomous implementation.
+title: "feat: "
+labels:
+  - ready
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem should be solved?
+      placeholder: Describe the current limitation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_change
+    attributes:
+      label: Proposed Change
+      description: What should be built?
+      placeholder: Describe the behavior and scope.
+    validations:
+      required: true
+
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of Done
+      description: What objective criteria indicate completion?
+      placeholder: List specific acceptance checks.
+    validations:
+      required: true
