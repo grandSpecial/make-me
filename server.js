@@ -12,8 +12,15 @@ if (process.env.DATABASE_URL) {
   });
 }
 
-app.get('/', (_req, res) => {
-  res.type('text/plain').send('Make me.');
+app.get('/', (req, res) => {
+  const accept = req.get('accept') || '';
+  if (accept.includes('text/html')) {
+    return res.type('html').send(
+      '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Make me.</title><style>html,body{height:100%;margin:0}body{display:grid;place-items:center}</style></head><body>Make me.</body></html>'
+    );
+  }
+
+  return res.type('text/plain').send('Make me.');
 });
 
 app.get('/health', async (_req, res) => {
