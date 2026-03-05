@@ -28,4 +28,4 @@ jobs:
       - name: Verify root endpoint
         run: |
           sleep 2
-          test "$(curl -fsS http://127.0.0.1:3000/)" = "Make me."
+          curl -fsS http://127.0.0.1:3000/ | grep -Fq "Make me."

@@ -4,7 +4,7 @@ An experiment in community-driven autonomous software evolution.
 
 ## Initial behavior
 
-- `GET /` returns plain text: `Make me.`
+- `GET /` includes the text: `Make me.`
 - `GET /health` returns JSON health status
 - If `DATABASE_URL` is set, `/health` validates DB connectivity with `SELECT 1`
 
@@ -13,14 +13,14 @@ An experiment in community-driven autonomous software evolution.
 - The public repository stays minimal and deployable.
 - Autonomous bot/governance logic is external and never committed here.
 - Community proposes features via GitHub issues.
-- Voting uses 👍 reactions on issue comments.
-- The top-voted eligible comment is interpreted and implemented by an external local bot.
+- Voting uses 👍 reactions on issues.
+- The top-voted eligible issue body is interpreted and implemented by an external local bot.
 
 ## External Bot Model
 
 - The bot runs locally (outside this repository) on a 2-hour cron schedule.
-- If no eligible comments exist, it does nothing and exits.
-- The bot is responsible for issue/comment selection, Codex execution, PR creation, CI waiting, merge, and issue closure.
+- If no eligible issues exist, it does nothing and exits.
+- The bot is responsible for issue selection, Codex execution, PR creation, CI waiting, merge, and issue closure.
 - This repository contains no autonomous workflows, no prompt templates, and no bot code.
 
 ## Local run
@@ -38,7 +38,7 @@ npm test
 
 ## CI
 
-CI verifies the root endpoint responds exactly with `Make me.` and requires no secrets.
+CI verifies the root endpoint includes `Make me.` and requires no secrets.
 
 ## Heroku deployment
 

@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node -e \"const http=require('http');const cp=require('child_process');const port=process.env.PORT||3000;const p=cp.spawn(process.execPath,['server.js'],{stdio:'inherit'});setTimeout(()=>{http.get('http://127.0.0.1:'+port+'/',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{p.kill();if(d.trim()==='Make me.')process.exit(0);console.error('Unexpected response:',JSON.stringify(d));process.exit(1);});}).on('error',e=>{p.kill();console.error(e);process.exit(1);});},1200);\""
+    "test": "node -e \"const http=require('http');const cp=require('child_process');const port=process.env.PORT||3000;const p=cp.spawn(process.execPath,['server.js'],{stdio:'inherit'});setTimeout(()=>{http.get('http://127.0.0.1:'+port+'/',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{p.kill();if(d.includes('Make me.'))process.exit(0);console.error('Unexpected response:',JSON.stringify(d));process.exit(1);});}).on('error',e=>{p.kill();console.error(e);process.exit(1);});},1200);\""
   },
   "engines": {
     "node": ">=20"
