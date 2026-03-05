@@ -1,0 +1,154 @@
+name: Issue Voting
+
+on:
+  issues:
+    types: [opened, edited, reopened, labeled, unlabeled]
+  issue_comment:
+    types: [created, edited, deleted]
+  schedule:
+    - cron: "0 */2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: issue-voting-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  vote-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Find top voted ready issue
+        id: vote
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: "open",
+                labels: "ready",
+                per_page: 100
+              }
+            );
+
+            let top = null;
+
+            function isTemplateComplete(body) {
+              if (!body) return false;
+              const hasProblem = /(^|\n)\s*#{0,6}\s*Problem\b/i.test(body);
+              const hasChange = /(^|\n)\s*#{0,6}\s*Proposed Change\b/i.test(body);
+              const hasDone = /(^|\n)\s*#{0,6}\s*Definition of Done\b/i.test(body);
+              return hasProblem && hasChange && hasDone;
+            }
+
+            for (const issue of issues) {
+              if (issue.pull_request) {
+                continue;
+              }
+
+              if (!isTemplateComplete(issue.body)) {
+                continue;
+              }
+
+              const reactions = await github.paginate(
+                github.rest.reactions.listForIssue,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  per_page: 100
+                }
+              );
+
+              const upvotes = reactions.filter((r) => r.content === "+1").length;
+
+              if (
+                !top ||
+                upvotes > top.votes ||
+                (upvotes === top.votes && issue.created_at < top.created_at)
+              ) {
+                top = {
+                  issue: issue.number,
+                  votes: upvotes,
+                  created_at: issue.created_at
+                };
+              }
+            }
+
+            core.setOutput("issue", top?.issue ? String(top.issue) : "0");
+            core.setOutput("votes", top?.votes ? String(top.votes) : "0");
+
+      - name: Trigger external builder
+        id: call_builder
+        if: steps.vote.outputs.issue != '0'
+        continue-on-error: true
+        env:
+          BUILDER_URL: https://make-me-8ceb8e9f761d.herokuapp.com/run_bot
+          BUILDER_TOKEN: ${{ secrets.BUILDER_WEBHOOK_SECRET }}
+          ISSUE_NUMBER: ${{ steps.vote.outputs.issue }}
+          ISSUE_VOTES: ${{ steps.vote.outputs.votes }}
+        run: |
+          if [ -z "$BUILDER_TOKEN" ]; then
+            echo "Missing BUILDER_WEBHOOK_SECRET"
+            exit 1
+          fi
+
+          curl --fail-with-body -X POST "$BUILDER_URL" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $BUILDER_TOKEN" \
+            -d "{\"issue\": ${ISSUE_NUMBER}, \"votes\": ${ISSUE_VOTES}}"
+
+      - name: Comment on failed build trigger
+        if: steps.vote.outputs.issue != '0' && steps.call_builder.outcome == 'failure'
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ steps.vote.outputs.issue }}
+        with:
+          script: |
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body: "Automatic build trigger failed. Keeping this issue open for retry."
+            });
+
+      - name: Close and label issue on successful trigger
+        if: steps.vote.outputs.issue != '0' && steps.call_builder.outcome == 'success'
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ steps.vote.outputs.issue }}
+        with:
+          script: |
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body: "Build triggered successfully. Marking issue as in progress by automation."
+            });
+
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              name: "ready"
+            }).catch(() => {});
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              labels: ["in-progress"]
+            });
+
+      - name: Fail workflow if trigger failed
+        if: steps.vote.outputs.issue != '0' && steps.call_builder.outcome == 'failure'
+        run: exit 1
