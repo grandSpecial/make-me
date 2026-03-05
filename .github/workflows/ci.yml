@@ -29,3 +29,7 @@ jobs:
         run: |
           sleep 2
           test "$(curl -fsS http://127.0.0.1:3000/)" = "Make me."
+
+      - name: Verify changelog endpoint
+        run: |
+          curl -fsS http://127.0.0.1:3000/changelog | grep -Fq "living changelog"
