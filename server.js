@@ -80,15 +80,22 @@ function getCommitHistory(limit = 40) {
 
 function getFallbackHistory() {
   const source = process.env.SOURCE_VERSION || '';
-  if (!source) {
-    return [];
+  if (source) {
+    return [
+      {
+        hash: source.slice(0, 7),
+        date: new Date().toISOString().slice(0, 10),
+        subject: 'deployed build'
+      }
+    ];
   }
 
+  // Ensure changelog always has an initial entry even without git metadata.
   return [
     {
-      hash: source.slice(0, 7),
+      hash: 'initial',
       date: new Date().toISOString().slice(0, 10),
-      subject: 'deployed build'
+      subject: 'initial changelog record'
     }
   ];
 }
@@ -134,7 +141,7 @@ app.get('/changelog', async (_req, res) => {
       .join('');
 
     return res.type('html').send(
-      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>living changelog</title><style>:root{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7f7f5;color:#1f1f1d}main{max-width:760px;margin:0 auto;padding:2.5rem 1.25rem 4rem}h1{margin:0 0 .75rem;font-size:1.5rem}header p{margin:0 0 2rem;color:#595953}article{padding:1rem 0;border-top:1px solid #d8d8d4}article:last-child{border-bottom:1px solid #d8d8d4}h2{margin:0 0 .5rem;font-size:.9rem;font-weight:600;letter-spacing:.03em;text-transform:lowercase;color:#474743}h2 span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;color:#72726f;margin-left:.5rem}p{margin:0;line-height:1.45}a{color:inherit}</style></head><body><main><header><h1>living changelog</h1><p>the app is narrating what happened to it, apparently.</p></header>${entries || '<article><p>there are no commits. this is probably peaceful.</p></article>'}</main></body></html>`
+      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>living changelog</title><style>:root{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7f7f5;color:#1f1f1d}main{max-width:760px;margin:0 auto;padding:2.5rem 1.25rem 4rem}h1{margin:0 0 .75rem;font-size:1.5rem}header p{margin:0 0 2rem;color:#595953}article{padding:1rem 0;border-top:1px solid #d8d8d4}article:last-child{border-bottom:1px solid #d8d8d4}h2{margin:0 0 .5rem;font-size:.9rem;font-weight:600;letter-spacing:.03em;text-transform:lowercase;color:#474743}h2 span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;color:#72726f;margin-left:.5rem}p{margin:0;line-height:1.45}a{color:inherit}</style></head><body><main><header><h1>living changelog</h1><p>the app is narrating what happened to it, apparently.</p></header>${entries}</main></body></html>`
     );
   } catch (_error) {
     return res.status(200).type('html').send(
